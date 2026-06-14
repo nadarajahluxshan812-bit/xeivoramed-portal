@@ -1,0 +1,1389 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Sehat.lk — Database schema
+// PostgreSQL + Prisma. Covers every module in the product spec.
+// Auth identities live in Supabase; `User.supabaseId` links the two.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  PATIENT
+  DOCTOR
+  CLINIC_STAFF
+  ADMIN
+}
+
+enum Language {
+  EN
+  SI // Sinhala
+  TA // Tamil
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNDISCLOSED
+}
+
+enum AppointmentStatus {
+  REQUESTED // patient asked, awaiting clinic/doctor approval
+  CONFIRMED
+  CHECKED_IN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum AppointmentType {
+  IN_PERSON
+  VIDEO
+  CHAT
+  HOME_VISIT
+}
+
+enum RecordCategory {
+  LAB_REPORT
+  PRESCRIPTION
+  SCAN
+  DISCHARGE_SUMMARY
+  REFERRAL
+  VACCINATION
+  CONSULTATION_NOTE
+  INSURANCE
+  OTHER
+}
+
+enum ReminderChannel {
+  SMS
+  WHATSAPP
+  PUSH
+  EMAIL
+  PHONE_CALL
+}
+
+enum ReminderStatus {
+  SCHEDULED
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum ReminderKind {
+  APPOINTMENT
+  MEDICATION
+  DIALYSIS
+  FOLLOW_UP
+  TREATMENT
+  ANNUAL_CHECKUP
+  ANNOUNCEMENT
+}
+
+enum FollowUpInterval {
+  ONE_MONTH
+  THREE_MONTHS
+  SIX_MONTHS
+  ANNUAL
+  CUSTOM
+}
+
+enum TimelineEventType {
+  VISIT
+  LAB_TEST
+  DIAGNOSIS
+  PRESCRIPTION
+  TREATMENT
+  VACCINATION
+  ADMISSION
+  DISCHARGE
+  NOTE
+}
+
+enum MedicationAdherence {
+  TAKEN
+  MISSED
+  SKIPPED
+  PENDING
+}
+
+enum DialysisSessionStatus {
+  SCHEDULED
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+enum ConsultationStatus {
+  SCHEDULED
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+// ── Core identity ────────────────────────────────────────────────────────────
+
+model User {
+  id          String    @id @default(cuid())
+  supabaseId  String?   @unique // maps to Supabase auth.users.id
+  email       String?   @unique
+  phone       String?   @unique
+  role        Role      @default(PATIENT)
+  fullName    String
+  avatarUrl   String?
+  language    Language  @default(EN)
+  isActive    Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Role profiles (one populated based on `role`)
+  patient PatientProfile?
+  doctor  DoctorProfile?
+  staff   StaffProfile?
+
+  // Notification preferences & devices
+  notificationPrefs NotificationPreference?
+  pushSubscriptions PushSubscription[]
+
+  // Authoring relations
+  authoredRecords   MedicalRecord[] @relation("RecordUploader")
+  authoredTimeline  TimelineEvent[] @relation("TimelineAuthor")
+  auditLogs         AuditLog[]
+  sentAnnouncements Announcement[]  @relation("AnnouncementAuthor")
+
+  // Global Health Identity Network (additive)
+  providerMemberships ProviderMember[]
+  emergencyActions    EmergencyAccessLog[] @relation("EmergencyActor")
+
+  // XeivoraMed: biometric verification attempts performed by this user
+  biometricAttempts BiometricVerificationAttempt[] @relation("BiometricActor")
+
+  @@index([role])
+}
+
+model PatientProfile {
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // National ID encrypted at rest (see lib/crypto.ts)
+  nicEncrypted      String?
+  dateOfBirth       DateTime?
+  gender            Gender    @default(UNDISCLOSED)
+  bloodGroup        String?
+  addressLine       String?
+  city              String?
+  district          String?
+  emergencyName     String?
+  emergencyPhone    String?
+  allergies         String[]  @default([])
+  chronicConditions String[]  @default([])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  appointments  Appointment[]
+  records       MedicalRecord[]
+  timeline      TimelineEvent[]
+  medications   MedicationPlan[]
+  dialysisPlan  DialysisPlan?
+  followUps     FollowUp[]
+  consultations Consultation[]
+  reminders     Reminder[]
+  clinicLinks   ClinicPatient[]
+
+  // ── Global Health Identity Network (additive) ──
+  globalHealthId     GlobalHealthId?
+  emergencyContacts  EmergencyContact[]
+  surgeries          Surgery[]
+  insurancePolicies  InsurancePolicy[]
+  accessGrants       ProviderAccessGrant[]
+  emergencyAccess    EmergencyAccessLog[]
+  standardizedEvents StandardizedHealthEvent[]
+  aiSummaries        AISummary[]
+
+  // ── HealthLink Global (additive) ──
+  memoryNodes       MemoryNode[]
+  memoryEdges       MemoryEdge[]
+  scribeSessions    ScribeSession[]
+  walletItems       WalletItem[]
+  identityDocuments IdentityDocument[]
+  travelProfile     TravelHealthProfile?
+  dependents        FamilyMember[]       @relation("Guardian")
+  guardianLinks     FamilyMember[]       @relation("Dependent")
+
+  // ── XeivoraMed: biometric-ready emergency verification (additive) ──
+  biometricCredentials BiometricCredential[]
+  biometricAttempts    BiometricVerificationAttempt[]
+
+  // ── Emergency Blood Network (additive) ──
+  bloodDonorProfile BloodDonorProfile?
+  bloodRequests     BloodRequest[]
+
+  @@index([city])
+  @@index([district])
+}
+
+model DoctorProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slmcNumber      String?  @unique // Sri Lanka Medical Council registration
+  specialty       String
+  qualifications  String?
+  bio             String?
+  consultationFee Int? // in LKR cents
+  clinicId        String?
+  clinic          Clinic?  @relation(fields: [clinicId], references: [id])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments   Appointment[]
+  availability   AvailabilitySlot[]
+  timeline       TimelineEvent[]    @relation("TimelineDoctor")
+  diagnoses      Diagnosis[]
+  followUps      FollowUp[]
+  consultations  Consultation[]
+  scribeSessions ScribeSession[]
+
+  @@index([specialty])
+}
+
+model StaffProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinicId  String
+  clinic    Clinic   @relation(fields: [clinicId], references: [id])
+  jobTitle  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── Clinics / Hospitals ──────────────────────────────────────────────────────
+
+model Clinic {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   @default("CLINIC") // CLINIC | HOSPITAL | DIALYSIS_CENTER
+  addressLine String?
+  city        String?
+  district    String?
+  phone       String?
+  email       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  doctors       DoctorProfile[]
+  staff         StaffProfile[]
+  appointments  Appointment[]
+  patients      ClinicPatient[]
+  queue         QueueEntry[]
+  providers     Provider[]
+  bloodRequests BloodRequest[]
+
+  @@index([district])
+}
+
+// Join: which patients belong to / are seen at which clinic
+model ClinicPatient {
+  id        String         @id @default(cuid())
+  clinicId  String
+  clinic    Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patientId String
+  patient   PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([clinicId, patientId])
+}
+
+// ── Scheduling ───────────────────────────────────────────────────────────────
+
+model AvailabilitySlot {
+  id        String        @id @default(cuid())
+  doctorId  String
+  doctor    DoctorProfile @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  dayOfWeek Int // 0=Sun … 6=Sat
+  startTime String // "09:00"
+  endTime   String // "12:00"
+  slotMins  Int           @default(15)
+  isActive  Boolean       @default(true)
+
+  @@index([doctorId, dayOfWeek])
+}
+
+model Appointment {
+  id                String            @id @default(cuid())
+  patientId         String
+  patient           PatientProfile    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId          String?
+  doctor            DoctorProfile?    @relation(fields: [doctorId], references: [id])
+  clinicId          String?
+  clinic            Clinic?           @relation(fields: [clinicId], references: [id])
+  type              AppointmentType   @default(IN_PERSON)
+  status            AppointmentStatus @default(REQUESTED)
+  scheduledAt       DateTime
+  durationMins      Int               @default(15)
+  reason            String?
+  notes             String?
+  // Rescheduling audit trail
+  rescheduledFromId String?           @unique
+  rescheduledFrom   Appointment?      @relation("Reschedule", fields: [rescheduledFromId], references: [id])
+  rescheduledTo     Appointment?      @relation("Reschedule")
+  cancelledReason   String?
+  checkedInAt       DateTime?
+  completedAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  reminders    Reminder[]
+  followUp     FollowUp?
+  consultation Consultation?
+  queueEntry   QueueEntry?
+
+  @@index([patientId, scheduledAt])
+  @@index([doctorId, scheduledAt])
+  @@index([clinicId, scheduledAt])
+  @@index([status])
+}
+
+// Real-time clinic queue / check-in
+model QueueEntry {
+  id            String      @id @default(cuid())
+  clinicId      String
+  clinic        Clinic      @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointmentId String      @unique
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  number        Int
+  status        String      @default("WAITING") // WAITING | CALLED | IN_ROOM | DONE
+  checkedInAt   DateTime    @default(now())
+  calledAt      DateTime?
+  doneAt        DateTime?
+
+  @@index([clinicId, status])
+}
+
+// ── Medical records (documents in S3) ────────────────────────────────────────
+
+model MedicalRecord {
+  id           String         @id @default(cuid())
+  patientId    String
+  patient      PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User           @relation("RecordUploader", fields: [uploadedById], references: [id])
+  category     RecordCategory @default(OTHER)
+  title        String
+  description  String?
+  // S3 object key; URLs are always issued as short-lived presigned links
+  s3Key        String
+  mimeType     String
+  sizeBytes    Int
+  recordDate   DateTime       @default(now())
+  tags         String[]       @default([])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  timelineEvent TimelineEvent?
+
+  @@index([patientId, category])
+  @@index([patientId, recordDate])
+}
+
+// ── Unified health timeline ──────────────────────────────────────────────────
+
+model TimelineEvent {
+  id         String            @id @default(cuid())
+  patientId  String
+  patient    PatientProfile    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type       TimelineEventType
+  title      String
+  summary    String?
+  occurredAt DateTime
+  doctorId   String?
+  doctor     DoctorProfile?    @relation("TimelineDoctor", fields: [doctorId], references: [id])
+  authorId   String?
+  author     User?             @relation("TimelineAuthor", fields: [authorId], references: [id])
+  recordId   String?           @unique
+  record     MedicalRecord?    @relation(fields: [recordId], references: [id])
+  diagnosis  Diagnosis?
+  createdAt  DateTime          @default(now())
+
+  @@index([patientId, occurredAt])
+  @@index([type])
+}
+
+model Diagnosis {
+  id              String        @id @default(cuid())
+  timelineEventId String        @unique
+  timelineEvent   TimelineEvent @relation(fields: [timelineEventId], references: [id], onDelete: Cascade)
+  doctorId        String
+  doctor          DoctorProfile @relation(fields: [doctorId], references: [id])
+  icd10Code       String?
+  condition       String
+  severity        String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+}
+
+// ── Medication module ────────────────────────────────────────────────────────
+
+model MedicationPlan {
+  id           String         @id @default(cuid())
+  patientId    String
+  patient      PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  drugName     String
+  dosage       String // "500mg"
+  instructions String?
+  // Times of day in 24h, e.g. ["08:00","20:00"]
+  times        String[]       @default([])
+  startDate    DateTime
+  endDate      DateTime?
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  doses     MedicationDose[]
+  reminders Reminder[]
+
+  @@index([patientId, isActive])
+}
+
+model MedicationDose {
+  id          String              @id @default(cuid())
+  planId      String
+  plan        MedicationPlan      @relation(fields: [planId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime
+  status      MedicationAdherence @default(PENDING)
+  takenAt     DateTime?
+
+  @@unique([planId, scheduledAt])
+  @@index([planId, status])
+}
+
+// ── Dialysis module ──────────────────────────────────────────────────────────
+
+model DialysisPlan {
+  id              String         @id @default(cuid())
+  patientId       String         @unique
+  patient         PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  centerName      String?
+  sessionsPerWeek Int            @default(3)
+  // Days of week patient attends, e.g. [1,3,5]
+  weekdays        Int[]          @default([])
+  startTime       String         @default("08:00")
+  durationMins    Int            @default(240)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  sessions DialysisSession[]
+}
+
+model DialysisSession {
+  id          String                @id @default(cuid())
+  planId      String
+  plan        DialysisPlan          @relation(fields: [planId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime
+  status      DialysisSessionStatus @default(SCHEDULED)
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime              @default(now())
+
+  reminders Reminder[]
+
+  @@unique([planId, scheduledAt])
+  @@index([planId, status])
+}
+
+// ── Follow-up management ─────────────────────────────────────────────────────
+
+model FollowUp {
+  id            String           @id @default(cuid())
+  patientId     String
+  patient       PatientProfile   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String?
+  doctor        DoctorProfile?   @relation(fields: [doctorId], references: [id])
+  appointmentId String?          @unique
+  appointment   Appointment?     @relation(fields: [appointmentId], references: [id])
+  interval      FollowUpInterval
+  dueDate       DateTime
+  reason        String?
+  completed     Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+
+  reminders Reminder[]
+
+  @@index([patientId, dueDate])
+  @@index([dueDate, completed])
+}
+
+// ── Reminders (the heart of the product) ─────────────────────────────────────
+
+model Reminder {
+  id            String          @id @default(cuid())
+  patientId     String
+  patient       PatientProfile  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  kind          ReminderKind
+  channel       ReminderChannel
+  status        ReminderStatus  @default(SCHEDULED)
+  sendAt        DateTime
+  sentAt        DateTime?
+  // Rendered message (already localized to the patient's language)
+  message       String
+  // Provider message id (Twilio SID, WhatsApp wamid, etc.) for delivery tracking
+  providerRef   String?
+  failureReason String?
+  attempts      Int             @default(0)
+
+  // Optional links to the thing being reminded about
+  appointmentId     String?
+  appointment       Appointment?     @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  medicationPlanId  String?
+  medicationPlan    MedicationPlan?  @relation(fields: [medicationPlanId], references: [id], onDelete: Cascade)
+  dialysisSessionId String?
+  dialysisSession   DialysisSession? @relation(fields: [dialysisSessionId], references: [id], onDelete: Cascade)
+  followUpId        String?
+  followUp          FollowUp?        @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([status, sendAt]) // the cron worker's hot path
+  @@index([patientId])
+}
+
+// ── Online consultation ──────────────────────────────────────────────────────
+
+model Consultation {
+  id            String             @id @default(cuid())
+  appointmentId String             @unique
+  appointment   Appointment        @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patientId     String
+  patient       PatientProfile     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String
+  doctor        DoctorProfile      @relation(fields: [doctorId], references: [id])
+  status        ConsultationStatus @default(SCHEDULED)
+  // Video room handle from the provider (Daily/Agora) — see lib/consult/video.ts
+  roomUrl       String?
+  startedAt     DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime           @default(now())
+
+  messages ChatMessage[]
+}
+
+model ChatMessage {
+  id              String       @id @default(cuid())
+  consultationId  String
+  consultation    Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  senderUserId    String
+  body            String?
+  // Optional shared file (S3 key)
+  attachmentS3Key String?
+  attachmentName  String?
+  createdAt       DateTime     @default(now())
+
+  @@index([consultationId, createdAt])
+}
+
+// ── Notifications: prefs, devices, campaigns ─────────────────────────────────
+
+model NotificationPreference {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sms          Boolean @default(true)
+  whatsapp     Boolean @default(true)
+  push         Boolean @default(true)
+  email        Boolean @default(false)
+  phoneCall    Boolean @default(false)
+  // Quiet hours, 24h local time
+  quietStart   String? // "22:00"
+  quietEnd     String? // "07:00"
+  leadTimeMins Int     @default(1440) // remind 24h before by default
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+}
+
+// Admin SMS campaigns / announcements
+model Announcement {
+  id          String          @id @default(cuid())
+  authorId    String
+  author      User            @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+  title       String
+  body        String
+  channel     ReminderChannel @default(SMS)
+  // Simple targeting: ALL | DISTRICT:<name> | ROLE:<role>
+  audience    String          @default("ALL")
+  sentCount   Int             @default(0)
+  scheduledAt DateTime?
+  sentAt      DateTime?
+  createdAt   DateTime        @default(now())
+}
+
+// ── Security: audit log ──────────────────────────────────────────────────────
+
+model AuditLog {
+  id               String   @id @default(cuid())
+  actorId          String?
+  actor            User?    @relation(fields: [actorId], references: [id])
+  actorRole        Role?
+  action           String // e.g. "RECORD_VIEW", "APPOINTMENT_CANCEL"
+  entityType       String
+  entityId         String?
+  // Whose PHI was touched — critical for HIPAA-style access reports
+  subjectPatientId String?
+  ip               String?
+  userAgent        String?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  @@index([subjectPatientId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action])
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// GLOBAL PATIENT-CONTROLLED HEALTH IDENTITY NETWORK (additive modules)
+// Nothing above this line is modified except additive relation fields.
+// ═════════════════════════════════════════════════════════════════════════════
+
+enum ProviderType {
+  HOSPITAL
+  CLINIC
+  LABORATORY
+  PHARMACY
+  EMERGENCY_CENTER
+  INSURANCE // HealthLink Global: insurers as network participants
+}
+
+enum ProviderVerificationStatus {
+  REGISTERED // self-registered, nothing checked yet
+  PENDING_VERIFICATION // documents submitted
+  VERIFIED // credentials checked
+  APPROVED // allowed on the network
+  SUSPENDED
+  REJECTED
+}
+
+enum AccessGrantStatus {
+  PENDING
+  APPROVED
+  REVOKED
+  EXPIRED
+}
+
+enum AccessScope {
+  EMERGENCY_ONLY // passport-level critical data only
+  SUMMARY // AI summaries + passport
+  FULL_RECORDS // full timeline + documents
+}
+
+enum EmergencyAccessReason {
+  UNCONSCIOUS_PATIENT
+  LIFE_THREATENING
+  PATIENT_UNABLE_TO_CONSENT
+  CRITICAL_CARE
+  OTHER
+}
+
+enum HealthEventSource {
+  HL7_FHIR
+  CDA
+  NHS
+  PDF_UPLOAD
+  INTERNAL
+  DICOM // medical imaging metadata
+}
+
+enum StandardEventType {
+  ENCOUNTER
+  CONDITION
+  MEDICATION
+  PROCEDURE
+  IMMUNIZATION
+  OBSERVATION
+  ALLERGY
+  SURGERY
+}
+
+enum AISummaryKind {
+  EMERGENCY
+  CHRONIC
+  MEDICATION
+  RECENT_TREATMENT
+  RISK // HealthLink Global: AI risk summary
+  BRIEFING // one-glance doctor briefing
+}
+
+// ── Module 1: Global Health Identity ─────────────────────────────────────────
+
+model GlobalHealthId {
+  id                 String         @id @default(cuid())
+  patientId          String         @unique
+  patient            PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  // Human-shareable global id, e.g. "HLX-LK-7F3A-9KQ2"
+  globalId           String         @unique
+  // Opaque high-entropy token embedded in the QR / break-glass flow
+  emergencyToken     String         @unique
+  organDonor         Boolean        @default(false)
+  // Implants kept as a simple list; richer surgeries live in the Surgery model
+  implants           String[]       @default([])
+  // Encrypted blob (AES-256-GCM) for anything extra-sensitive on the passport
+  sensitiveEncrypted String?
+  passportVersion    Int            @default(1)
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([globalId])
+}
+
+model EmergencyContact {
+  id           String         @id @default(cuid())
+  patientId    String
+  patient      PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name         String
+  relationship String?
+  phone        String
+  isPrimary    Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+
+  @@index([patientId])
+}
+
+model Surgery {
+  id          String         @id @default(cuid())
+  patientId   String
+  patient     PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name        String
+  performedAt DateTime?
+  hospital    String?
+  notes       String?
+  createdAt   DateTime       @default(now())
+
+  @@index([patientId, performedAt])
+}
+
+model InsurancePolicy {
+  id              String         @id @default(cuid())
+  patientId       String
+  patient         PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  insurer         String
+  // Policy number is PHI-adjacent → encrypted at rest
+  policyEncrypted String
+  coverage        String?
+  validUntil      DateTime?
+  createdAt       DateTime       @default(now())
+
+  @@index([patientId])
+}
+
+// ── Module 4: Global Provider Network ────────────────────────────────────────
+
+model Provider {
+  id                String                     @id @default(cuid())
+  name              String
+  type              ProviderType
+  status            ProviderVerificationStatus @default(REGISTERED)
+  country           String                     @default("LK")
+  city              String?
+  // Regulator / license reference verified during onboarding
+  licenseNumber     String?
+  registrationEmail String?
+  registrationPhone String?
+  // Optional link to an existing in-network clinic
+  clinicId          String?
+  clinic            Clinic?                    @relation(fields: [clinicId], references: [id])
+  verifiedAt        DateTime?
+  verifiedByUserId  String?
+  // HealthLink Global: provider trust score (0–100), cross-border + audit
+  trustScore        Int                        @default(50)
+  crossBorder       Boolean                    @default(false)
+  lastAuditAt       DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  members       ProviderMember[]
+  accessGrants  ProviderAccessGrant[]
+  emergencyLogs EmergencyAccessLog[]
+
+  @@index([type, status])
+  @@index([country])
+}
+
+// Links staff users to a provider organisation (a doctor can belong to many).
+model ProviderMember {
+  id         String   @id @default(cuid())
+  providerId String
+  provider   Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle   String?
+  createdAt  DateTime @default(now())
+
+  @@unique([providerId, userId])
+}
+
+// ── Module 3: Patient ownership / consent ────────────────────────────────────
+
+model ProviderAccessGrant {
+  id         String            @id @default(cuid())
+  patientId  String
+  patient    PatientProfile    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId String
+  provider   Provider          @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  scope      AccessScope       @default(SUMMARY)
+  status     AccessGrantStatus @default(PENDING)
+  grantedAt  DateTime?
+  revokedAt  DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([patientId, providerId])
+  @@index([providerId, status])
+}
+
+// ── Module 5: Emergency access — immutable, hash-chained audit ────────────────
+
+model EmergencyAccessLog {
+  id                 String                @id @default(cuid())
+  patientId          String
+  patient            PatientProfile        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerId         String?
+  provider           Provider?             @relation(fields: [providerId], references: [id])
+  actorUserId        String?
+  actor              User?                 @relation("EmergencyActor", fields: [actorUserId], references: [id])
+  actorName          String // captured even for off-network responders
+  reason             EmergencyAccessReason
+  justification      String?
+  scope              AccessScope           @default(EMERGENCY_ONLY)
+  // How the provider proved identity/intent (QR, Health ID, biometric demo, …)
+  verificationMethod String?
+  // Where the access happened (free text / geo)
+  location           String?
+  ip                 String?
+  userAgent          String?
+  // Tamper-evident chain: each row hashes its content + the previous row's hash
+  prevHash           String?
+  hash               String                @unique
+  createdAt          DateTime              @default(now())
+
+  verificationAttempts BiometricVerificationAttempt[]
+
+  @@index([patientId, createdAt])
+  @@index([providerId, createdAt])
+}
+
+// ── Module 6: International record sharing / normalization ────────────────────
+
+model StandardizedHealthEvent {
+  id            String            @id @default(cuid())
+  patientId     String
+  patient       PatientProfile    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  source        HealthEventSource
+  type          StandardEventType
+  // Original coding system + code, e.g. SNOMED / ICD-10 / LOINC / RxNorm
+  codeSystem    String?
+  code          String?
+  title         String
+  description   String?
+  occurredAt    DateTime
+  // Provider / country of origin for cross-border visits
+  originName    String?
+  originCountry String?
+  // Raw payload retained for provenance (FHIR resource, CDA section, etc.)
+  raw           Json?
+  createdAt     DateTime          @default(now())
+
+  @@index([patientId, occurredAt])
+  @@index([type])
+  @@index([source])
+}
+
+// ── Module 8: AI continuity briefings (cached) ───────────────────────────────
+
+model AISummary {
+  id         String         @id @default(cuid())
+  patientId  String
+  patient    PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  kind       AISummaryKind
+  content    String
+  // Model/engine that produced it (e.g. "rules-v1" or "claude-..."), for provenance
+  engine     String         @default("rules-v1")
+  // Hash of the inputs so we can invalidate when the patient record changes
+  inputsHash String
+  createdAt  DateTime       @default(now())
+
+  @@unique([patientId, kind])
+  @@index([patientId])
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// HEALTHLINK GLOBAL — "One Patient. One Health Identity. Anywhere." (additive)
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── Priority 1: Global Health Memory Engine ──────────────────────────────────
+
+enum MemoryNodeType {
+  CONDITION
+  MEDICATION
+  PROCEDURE
+  SURGERY
+  ENCOUNTER
+  LAB
+  ALLERGY
+  RISK_FACTOR
+  ADMISSION
+  IMMUNIZATION
+}
+
+enum MemoryEdgeType {
+  CAUSED
+  TREATS
+  PROGRESSED_TO
+  COMPLICATION_OF
+  FOLLOWS
+  RELATED_TO
+  PRESCRIBED_FOR
+}
+
+// A node in the patient's lifelong memory graph (derived from records/events).
+model MemoryNode {
+  id            String         @id @default(cuid())
+  patientId     String
+  patient       PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type          MemoryNodeType
+  label         String
+  codeSystem    String? // SNOMED CT / ICD-10 / RxNorm / LOINC
+  code          String?
+  occurredAt    DateTime?
+  severity      String?
+  status        String? // active | resolved | chronic
+  // Provenance: the standardized event / record this was derived from
+  sourceEventId String?
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+
+  edgesFrom MemoryEdge[] @relation("EdgeFrom")
+  edgesTo   MemoryEdge[] @relation("EdgeTo")
+
+  @@index([patientId, type])
+  @@index([patientId, occurredAt])
+}
+
+// A directed, weighted relationship between two memory nodes.
+model MemoryEdge {
+  id         String         @id @default(cuid())
+  patientId  String
+  patient    PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  fromNodeId String
+  fromNode   MemoryNode     @relation("EdgeFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNodeId   String
+  toNode     MemoryNode     @relation("EdgeTo", fields: [toNodeId], references: [id], onDelete: Cascade)
+  type       MemoryEdgeType
+  weight     Float          @default(1)
+  note       String?
+  createdAt  DateTime       @default(now())
+
+  @@index([patientId])
+  @@index([fromNodeId])
+  @@index([toNodeId])
+}
+
+// ── Priority 2: AI Specialist Medical Scribe ─────────────────────────────────
+
+enum ScribeSpecialty {
+  CARDIOLOGY
+  ONCOLOGY
+  NEPHROLOGY
+  NEUROLOGY
+  GASTROENTEROLOGY
+  ENDOCRINOLOGY
+  GENERAL_PRACTICE
+}
+
+enum ScribeNoteType {
+  CONSULTATION
+  SOAP
+  DIAGNOSIS
+  FOLLOW_UP_PLAN
+  REFERRAL_LETTER
+  DISCHARGE_SUMMARY
+}
+
+enum ScribeStatus {
+  RECORDING
+  TRANSCRIBED
+  DRAFTED
+  UNDER_REVIEW
+  FINALIZED
+}
+
+model ScribeSession {
+  id         String          @id @default(cuid())
+  patientId  String
+  patient    PatientProfile  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId   String
+  doctor     DoctorProfile   @relation(fields: [doctorId], references: [id])
+  specialty  ScribeSpecialty
+  status     ScribeStatus    @default(RECORDING)
+  // Raw ambient transcript with speaker labels (Doctor:/Patient:)
+  transcript String?
+  audioS3Key String?
+  language   String          @default("EN")
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  notes ScribeNote[]
+
+  @@index([doctorId, createdAt])
+  @@index([patientId])
+}
+
+model ScribeNote {
+  id               String         @id @default(cuid())
+  sessionId        String
+  session          ScribeSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type             ScribeNoteType
+  content          String
+  // Engine that produced it (rules-v1 / claude-...) for provenance
+  engine           String         @default("rules-v1")
+  reviewedByUserId String?
+  finalized        Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+
+  @@index([sessionId])
+}
+
+// ── Priority 3: Global Language Engine (terminology) ─────────────────────────
+
+// Clinical concept with multi-language renderings, keyed by a coding system.
+model TerminologyConcept {
+  id           String   @id @default(cuid())
+  system       String // SNOMED | ICD-10 | LOINC | RxNorm | FHIR
+  code         String
+  display      String // canonical English display
+  // { "SI": "...", "TA": "...", "HI": "...", ... }
+  translations Json
+  category     String? // condition | medication | procedure | allergy
+  createdAt    DateTime @default(now())
+
+  @@unique([system, code])
+  @@index([category])
+}
+
+// ── Priority 4: Global Patient Identity ──────────────────────────────────────
+
+enum IdentityDocType {
+  NIC
+  PASSPORT
+  DRIVING_LICENSE
+  RESIDENCE_PERMIT
+  NATIONAL_HEALTH_NUMBER
+  VACCINATION_PASSPORT
+}
+
+enum CareRelationship {
+  CHILD
+  PARENT
+  SPOUSE
+  ELDER
+  DEPENDENT
+  GUARDIAN
+}
+
+model IdentityDocument {
+  id              String          @id @default(cuid())
+  patientId       String
+  patient         PatientProfile  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type            IdentityDocType
+  country         String
+  // Document number encrypted at rest (AES-256-GCM)
+  numberEncrypted String
+  issuedAt        DateTime?
+  validUntil      DateTime?
+  verified        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+
+  @@index([patientId, type])
+}
+
+model TravelHealthProfile {
+  id             String         @id @default(cuid())
+  patientId      String         @unique
+  patient        PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bloodGroup     String?
+  conditions     String[]       @default([])
+  destinations   String[]       @default([])
+  emergencyNotes String?
+  // Yellow-fever / COVID etc. summarized for border health
+  vaccinations   String[]       @default([])
+  updatedAt      DateTime       @updatedAt
+}
+
+// Family care: a guardian patient linked to dependents (children/elderly).
+model FamilyMember {
+  id                 String           @id @default(cuid())
+  guardianId         String
+  guardian           PatientProfile   @relation("Guardian", fields: [guardianId], references: [id], onDelete: Cascade)
+  // Optional link to the dependent's own patient profile (if they have one)
+  dependentPatientId String?
+  dependentPatient   PatientProfile?  @relation("Dependent", fields: [dependentPatientId], references: [id])
+  name               String
+  relationship       CareRelationship
+  dateOfBirth        DateTime?
+  notes              String?
+  createdAt          DateTime         @default(now())
+
+  @@index([guardianId])
+}
+
+// ── Priority 8: Global Health Wallet ─────────────────────────────────────────
+
+enum WalletItemType {
+  INSURANCE
+  VACCINATION
+  CERTIFICATE
+  PRESCRIPTION
+  TRAVEL_DOCUMENT
+  HEALTH_PASSPORT
+  LAB_RESULT
+}
+
+model WalletItem {
+  id            String         @id @default(cuid())
+  patientId     String
+  patient       PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type          WalletItemType
+  title         String
+  issuer        String?
+  // Document binary in S3; structured data optionally encrypted
+  s3Key         String?
+  dataEncrypted String?
+  validUntil    DateTime?
+  verified      Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+
+  @@index([patientId, type])
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// XeivoraMed — Biometric-ready emergency verification (additive)
+//
+// DEMONSTRATION ARCHITECTURE ONLY. We never store raw biometric images,
+// fingerprints, or facial data — only opaque template HASHES. Real deployment
+// would require certified biometric providers, explicit patient consent, and
+// jurisdiction-specific regulatory approval.
+// ═════════════════════════════════════════════════════════════════════════════
+
+enum BiometricType {
+  FACE // demo
+  FINGERPRINT // demo
+  PALM // future
+  IRIS // future
+}
+
+enum VerificationMethod {
+  QR_CODE
+  HEALTH_ID
+  PASSPORT
+  NATIONAL_ID
+  FACE
+  FINGERPRINT
+  PALM
+  IRIS
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  FAILED
+  EXPIRED
+}
+
+// An enrolled biometric credential — stores ONLY a salted template hash.
+model BiometricCredential {
+  id           String             @id @default(cuid())
+  patientId    String
+  patient      PatientProfile     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  type         BiometricType
+  // The biometric provider / device that produced the template (e.g. "demo-sdk")
+  provider     String
+  // Opaque, salted hash of the biometric template. NEVER the raw biometric.
+  templateHash String
+  status       VerificationStatus @default(VERIFIED)
+  createdAt    DateTime           @default(now())
+  revokedAt    DateTime?
+
+  attempts BiometricVerificationAttempt[]
+
+  @@index([patientId, type])
+}
+
+// A single verification attempt during an emergency-access flow.
+model BiometricVerificationAttempt {
+  id             String               @id @default(cuid())
+  patientId      String
+  patient        PatientProfile       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  providerUserId String?
+  providerUser   User?                @relation("BiometricActor", fields: [providerUserId], references: [id])
+  credentialId   String?
+  credential     BiometricCredential? @relation(fields: [credentialId], references: [id])
+  method         VerificationMethod
+  status         VerificationStatus   @default(PENDING)
+  reason         String?
+  location       String?
+  // Link to the immutable emergency-access audit entry this attempt produced
+  auditLogId     String?
+  auditLog       EmergencyAccessLog?  @relation(fields: [auditLogId], references: [id])
+  createdAt      DateTime             @default(now())
+
+  @@index([patientId, createdAt])
+  @@index([providerUserId, createdAt])
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// EMERGENCY BLOOD NETWORK (additive)
+//
+// Helps hospitals rapidly locate compatible donors in an emergency. XeivoraMed
+// does NOT determine donor eligibility — final decisions rest with licensed
+// healthcare professionals and blood-collection organizations. Donor private
+// information is never exposed publicly and is revealed to a hospital only after
+// the donor accepts a request.
+// ═════════════════════════════════════════════════════════════════════════════
+
+enum RhesusFactor {
+  POSITIVE
+  NEGATIVE
+}
+
+enum DonorAvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  TEMPORARILY_INELIGIBLE
+  RECENTLY_DONATED
+}
+
+enum DonorEligibilityStatus {
+  ELIGIBLE
+  INELIGIBLE
+  UNDER_REVIEW
+}
+
+enum BloodUrgency {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum BloodRequestStatus {
+  OPEN
+  MATCHING
+  DONOR_FOUND
+  COMPLETED
+  CANCELLED
+}
+
+enum BloodMatchStatus {
+  PENDING // ranked, not yet notified
+  NOTIFIED // alert sent to the donor
+  ACCEPTED
+  DECLINED
+  ARRIVED
+  DONATED
+  EXPIRED
+}
+
+model BloodDonorProfile {
+  id                 String                  @id @default(cuid())
+  patientId          String                  @unique
+  patient            PatientProfile          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  bloodGroup         String // A | B | AB | O
+  rhesusFactor       RhesusFactor
+  country            String                  @default("LK")
+  city               String?
+  latitude           Float?
+  longitude          Float?
+  searchRadius       Int                     @default(25) // km the donor is willing to travel
+  availabilityStatus DonorAvailabilityStatus @default(AVAILABLE)
+  lastDonationDate   DateTime?
+  eligibilityStatus  DonorEligibilityStatus  @default(ELIGIBLE)
+  // Donor's emergency contact (kept private; revealed to hospital only on accept)
+  emergencyContact   String?
+  verified           Boolean                 @default(false)
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+
+  matches BloodMatch[]
+
+  @@index([bloodGroup, rhesusFactor, availabilityStatus])
+  @@index([country, city])
+}
+
+model BloodRequest {
+  id               String             @id @default(cuid())
+  hospitalId       String
+  hospital         Clinic             @relation(fields: [hospitalId], references: [id])
+  // Optional link to the recipient patient (may be unknown/unconscious)
+  patientId        String?
+  patient          PatientProfile?    @relation(fields: [patientId], references: [id])
+  bloodGroupNeeded String // e.g. "O-"
+  unitsRequired    Int                @default(1)
+  urgency          BloodUrgency       @default(HIGH)
+  reason           String?
+  location         String?
+  latitude         Float?
+  longitude        Float?
+  radius           Int                @default(25) // km search radius
+  status           BloodRequestStatus @default(OPEN)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  matches BloodMatch[]
+
+  @@index([status, urgency])
+  @@index([hospitalId, createdAt])
+}
+
+model BloodMatch {
+  id          String            @id @default(cuid())
+  requestId   String
+  request     BloodRequest      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  donorId     String
+  donor       BloodDonorProfile @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  matchScore  Float             @default(0) // 0–100, higher = better
+  distanceKm  Float?
+  etaMinutes  Int?
+  status      BloodMatchStatus  @default(PENDING)
+  notifiedAt  DateTime?
+  respondedAt DateTime?
+  arrivedAt   DateTime?
+  donatedAt   DateTime?
+  createdAt   DateTime          @default(now())
+
+  @@unique([requestId, donorId])
+  @@index([requestId, status])
+  @@index([donorId, status])
+}
