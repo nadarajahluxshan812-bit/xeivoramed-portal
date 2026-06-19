@@ -10,9 +10,9 @@ import { ShieldCheck, FileCheck2, Pencil } from "lucide-react";
 export type TrustLevel = "VERIFIED" | "DOCUMENT_VERIFIED" | "SELF_REPORTED";
 
 const STYLES: Record<TrustLevel, { label: string; cls: string; icon: typeof ShieldCheck }> = {
-  VERIFIED: { label: "Verified", cls: "bg-emerald-100 text-emerald-700", icon: ShieldCheck },
-  DOCUMENT_VERIFIED: { label: "Document Verified", cls: "bg-brand-100 text-brand-700", icon: FileCheck2 },
-  SELF_REPORTED: { label: "Self Reported", cls: "bg-amber-100 text-amber-700", icon: Pencil },
+  VERIFIED: { label: "Verified", cls: "bg-verifiedsoft text-verified", icon: ShieldCheck },
+  DOCUMENT_VERIFIED: { label: "Document Verified", cls: "bg-brand-50 text-brand-700", icon: FileCheck2 },
+  SELF_REPORTED: { label: "Self Reported", cls: "bg-selfsoft text-selfr", icon: Pencil },
 };
 
 export function TrustBadge({ level }: { level: TrustLevel }) {

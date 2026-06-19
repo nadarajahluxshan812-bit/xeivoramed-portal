@@ -25,9 +25,9 @@ export function AppShell({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F6F7FB]">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-slate-200 bg-white px-4 py-5 md:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-slate-200/70 bg-white px-5 py-6 md:flex">
         <div className="flex items-center justify-between px-2">
           <Logo />
           <DemoModeBadge />
@@ -42,7 +42,7 @@ export function AppShell({
               )}
               <Link
                 href={item.href}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-brand-50 hover:text-brand-700"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700"
               >
                 <span className="text-slate-400">{item.icon}</span>
                 {item.label}
@@ -72,7 +72,7 @@ export function AppShell({
       </aside>
 
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/70 bg-white/95 px-4 py-3 backdrop-blur md:hidden">
         <div className="flex items-center gap-2">
           <Logo />
           <DemoModeBadge />
@@ -86,10 +86,10 @@ export function AppShell({
       </header>
 
       {/* Main content */}
-      <main className="px-4 pb-24 pt-5 md:ml-64 md:px-8 md:pb-10">{children}</main>
+      <main className="px-5 pb-24 pt-6 md:ml-64 md:px-12 md:pb-14 md:pt-10">{children}</main>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-slate-200 bg-white md:hidden" aria-label="Primary mobile">
+      <nav className="fixed inset-x-0 bottom-0 z-10 flex border-t border-slate-200/70 bg-white/95 backdrop-blur md:hidden" aria-label="Primary mobile">
         {nav.slice(0, 5).map((item, i) => (
           <Link
             key={`${item.href}-${i}`}
