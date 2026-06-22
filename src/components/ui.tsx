@@ -29,10 +29,10 @@ export function SectionTitle({
 type Tone = "brand" | "green" | "amber" | "red" | "slate";
 const toneClasses: Record<Tone, string> = {
   brand: "bg-brand-50 text-brand-700",
-  green: "bg-emerald-50 text-emerald-700",
-  amber: "bg-amber-50 text-amber-700",
+  green: "bg-verifiedsoft text-verified",
+  amber: "bg-selfsoft text-selfr",
   red: "bg-red-50 text-red-700",
-  slate: "bg-slate-100 text-slate-600",
+  slate: "bg-slate-100 text-slatebody",
 };
 
 export function Badge({ children, tone = "slate" }: { children: ReactNode; tone?: Tone }) {

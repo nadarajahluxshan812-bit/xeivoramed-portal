@@ -57,10 +57,10 @@ export default async function ProviderScribePage() {
         {/* Patient lookup */}
         <Card>
           <SectionTitle title="Patient lookup" icon={<Search className="h-5 w-5 text-brand-600" />} />
-          <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 transition focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/10">
             <Search className="h-4 w-4 text-slate-400" />
             <input
-              className="w-full text-sm outline-none"
+              className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-slate-400"
               placeholder="Search by XeivoraMed ID, name or national ID…"
               defaultValue={isDemoMode ? "Nimal Perera · HLX-LK-7F3A-9KQ2" : ""}
             />

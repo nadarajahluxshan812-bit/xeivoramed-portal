@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Served under xeivora.com/portal/* (Cloudflare Worker proxies that path to Railway).
+  // basePath prefixes all _next assets, <Link>s, router pushes and redirects with /portal
+  // so everything resolves correctly under the subpath. The app now lives at
+  // <railway-url>/portal as well — the bare railway root returns 404 by design.
+  basePath: "/portal",
   // Pin the workspace root so Next doesn't pick up a stray parent lockfile.
   outputFileTracingRoot: __dirname,
   // Security headers aligned with the HIPAA-inspired posture documented in SECURITY.md

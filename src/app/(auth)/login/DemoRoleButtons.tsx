@@ -30,7 +30,7 @@ export function DemoRoleButtons({ labels }: { labels: Record<string, string> }) 
         <button
           key={r.role}
           onClick={() => choose(r.role, r.href)}
-          className="flex items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:border-brand-300 hover:bg-brand-50"
+          className="flex items-center gap-2.5 rounded-xl border border-line px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:border-brand-300 hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
         >
           <span className="text-brand-600"><r.icon className="h-4 w-4" /></span>
           {labels[r.role]}

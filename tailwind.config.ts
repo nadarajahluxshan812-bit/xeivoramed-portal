@@ -34,6 +34,12 @@ const config: Config = {
         danger: { 500: "#E5484D", 600: "#CC3B40" },
         warn: { 500: "#F5A623", 600: "#D98E16" },
         ink: "#171E33",
+        // Secondary body text
+        slatebody: "#535B73",
+        // Deep navy for the auth brand panel
+        navy: { DEFAULT: "#11245C", 700: "#0E1F50" },
+        // Hairline border used across cards / inputs
+        line: "#E1E4EF",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],

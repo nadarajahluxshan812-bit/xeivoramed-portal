@@ -8,6 +8,7 @@ import {
   Pill,
   ArrowRight,
   History,
+  Activity,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -18,16 +19,15 @@ import { isDemoMode } from "@/lib/env";
 import { demoGlobalId } from "@/lib/global/demo";
 
 export const metadata = {
-  title: "XeivoraMed — Verified Emergency Medical Passport",
+  title: "XeivoraMed — Verified patient data for clinics & labs",
   description:
-    "One patient. One verified medical passport. Anywhere. Patients upload medical documents; XeivoraMed verifies identity and extracts emergency medical information so healthcare providers can access verified emergency data when a patient cannot speak.",
+    "XeivoraMed is a trusted-data layer that links a patient's government-verified identity to verified records from certified labs and clinics — so the right information reaches the right provider, with consent, in seconds.",
 };
 
 const STEPS = [
   { icon: ShieldCheck, titleKey: "lpStep1Title", bodyKey: "lpStep1Body" },
   { icon: FileLock2, titleKey: "lpStep2Title", bodyKey: "lpStep2Body" },
-  { icon: ScanLine, titleKey: "lpStep3Title", bodyKey: "lpStep3Body" },
-  { icon: ShieldCheck, titleKey: "lpStep4Title", bodyKey: "lpStep4Body" },
+  { icon: History, titleKey: "lpStep3Title", bodyKey: "lpStep3Body" },
 ] as const;
 
 export default async function LandingPage() {
@@ -89,9 +89,9 @@ export default async function LandingPage() {
             </div>
           </div>
 
-          {/* Emergency passport preview */}
-          <div className="rounded-3xl border border-red-200 bg-white shadow-sm">
-            <div className="rounded-t-3xl bg-red-600 px-5 py-2 text-center text-xs font-semibold text-white">
+          {/* Verified patient record preview */}
+          <div className="rounded-3xl border border-slate-200/70 bg-white shadow-card">
+            <div className="rounded-t-3xl bg-brand-600 px-5 py-2 text-center text-xs font-semibold tracking-wide text-white">
               {t(locale, "lpCardHeader")}
             </div>
             <div className="space-y-3 p-5">
@@ -114,6 +114,10 @@ export default async function LandingPage() {
                 <p className="flex items-center gap-1.5 text-xs font-bold uppercase text-slate-500"><Pill className="h-4 w-4" /> {t(locale, "lpCardMeds")}</p>
                 <p className="mt-1 text-sm text-slate-700">Amlodipine 5mg · Erythropoietin · Calcium carbonate</p>
               </div>
+              <div className="rounded-xl border border-slate-100 p-3">
+                <p className="flex items-center gap-1.5 text-xs font-bold uppercase text-slate-500"><Activity className="h-4 w-4" /> {t(locale, "lpCardLabs")}</p>
+                <p className="mt-1 text-sm text-slate-700">eGFR 14 · Hb 9.8 · K⁺ 5.1 <span className="text-slate-400">· verified · 12 Jun</span></p>
+              </div>
               {isDemoMode ? (
                 <Link href={emergencyLink} className="flex items-center justify-center gap-1.5 rounded-xl bg-slate-900 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">
                   {t(locale, "lpCardOpenLive")} <ArrowRight className="h-4 w-4" />
@@ -133,7 +137,7 @@ export default async function LandingPage() {
           <p className="mt-2 max-w-2xl text-slate-600">
             {t(locale, "lpHowBody")}
           </p>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {STEPS.map((s, i) => (
               <div key={s.titleKey} className="card relative">
                 <span className="absolute right-4 top-4 text-3xl font-bold text-slate-100">{i + 1}</span>

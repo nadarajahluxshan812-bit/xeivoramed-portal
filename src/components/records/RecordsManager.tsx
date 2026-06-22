@@ -172,10 +172,10 @@ export function RecordsManager({
     <div className="space-y-6">
       {/* Search + filter */}
       <Card>
-        <div className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-xl border border-line bg-white px-3 py-2.5 transition focus-within:border-brand-500 focus-within:ring-4 focus-within:ring-brand-500/10">
           <Search className="h-4 w-4 text-slate-400" />
           <input
-            className="w-full text-sm outline-none"
+            className="w-full bg-transparent text-sm text-ink outline-none placeholder:text-slate-400"
             placeholder="Search reports, prescriptions, scans…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

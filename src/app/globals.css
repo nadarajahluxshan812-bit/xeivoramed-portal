@@ -45,7 +45,7 @@ h2, h3 {
 @layer components {
   /* Clean card surface — hairline border, soft layered shadow, generous padding. */
   .card {
-    @apply rounded-2xl border border-slate-200/60 bg-white p-6 shadow-card;
+    @apply rounded-2xl border border-line bg-white p-6 shadow-card;
   }
   /* Cards that respond to hover (clickable/linked surfaces) */
   .card-interactive {
@@ -60,7 +60,7 @@ h2, h3 {
   }
   /* Quiet outline secondary. */
   .btn-secondary {
-    @apply btn border border-slate-200 bg-white text-slate-700 shadow-soft hover:bg-slate-50 hover:border-slate-300;
+    @apply btn border border-line bg-white text-slate-700 shadow-soft hover:bg-slate-50 hover:border-slate-300;
   }
   .btn-danger {
     @apply btn bg-danger-500 text-white shadow-soft hover:bg-danger-600;
@@ -75,12 +75,16 @@ h2, h3 {
   .badge {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
-  /* Polished form field — generous height, hairline border, soft focus halo. */
+  /* Polished form field — ~48px height, hairline border, soft focus halo. */
   .input {
-    @apply w-full rounded-xl border border-slate-300/80 bg-white px-3.5 py-3 text-sm text-ink transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10;
+    @apply w-full rounded-xl border border-line bg-white px-3.5 py-3.5 text-sm text-ink transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10;
   }
   .label {
-    @apply mb-1.5 block text-sm font-medium text-slate-700;
+    @apply mb-1.5 block text-sm font-medium text-slatebody;
+  }
+  /* Full-width solid coral CTA — used for the headline auth action. */
+  .btn-coral-600 {
+    @apply btn bg-coral-600 text-white shadow-soft hover:brightness-105 hover:-translate-y-px hover:shadow-card;
   }
 }
 

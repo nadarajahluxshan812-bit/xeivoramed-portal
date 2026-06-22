@@ -44,7 +44,9 @@ export function LoginForm() {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      // basePath ("/portal") is not part of window.location.origin, so add it
+      // explicitly or Google returns to xeivora.com/auth/callback (outside the route).
+      options: { redirectTo: `${window.location.origin}/portal/auth/callback` },
     });
   }
 
