@@ -66,7 +66,7 @@ export default async function TimelinePage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
           <Activity className="h-6 w-6 text-brand-600" /> Lifelong health timeline
         </h1>
         <p className="text-sm text-slate-500">

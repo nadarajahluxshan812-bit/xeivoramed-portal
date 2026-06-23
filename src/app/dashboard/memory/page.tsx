@@ -41,7 +41,7 @@ export default async function MemoryPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
           <BrainCircuit className="h-6 w-6 text-brand-600" /> Health Memory
         </h1>
         <p className="text-sm text-slate-500">

@@ -43,7 +43,7 @@ export default async function ProviderScribePage() {
     <AppShell nav={nav} userName={user.fullName} roleLabel="Provider portal" locale={locale}>
       <div className="mx-auto max-w-5xl space-y-6">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
             <Mic className="h-6 w-6 text-brand-600" /> AI Specialist Scribe
           </h1>
           <p className="text-sm text-slate-500">Provider / hospital documentation — draft, review and finalize specialty notes.</p>

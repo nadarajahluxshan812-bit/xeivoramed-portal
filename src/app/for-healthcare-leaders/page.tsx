@@ -107,13 +107,13 @@ export default async function HealthcareLeadersPage({
           {joined ? (
             <div className="text-center">
               <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-              <h2 className="mt-4 text-2xl font-bold text-slate-900">Thank you — you&apos;re on the list.</h2>
+              <h2 className="mt-4 text-2xl font-semibold text-ink">Thank you — you&apos;re on the list.</h2>
               <p className="mt-2 text-slate-600">We&apos;ll reach out to set up a short discovery conversation. No sales pitch.</p>
               <Link href="/" className="btn-secondary mt-6 inline-flex">Back to home</Link>
             </div>
           ) : (
             <>
-              <h2 className="text-2xl font-bold text-slate-900">Join the discovery list</h2>
+              <h2 className="text-2xl font-semibold text-ink">Join the discovery list</h2>
               <p className="mt-2 text-sm text-slate-600">For doctors, hospital CIOs, insurers and digital-health leaders. We&apos;ll only use your details to contact you about XeivoraMed.</p>
               <form action="/api/waitlist" method="post" className="mt-5 grid gap-3 sm:grid-cols-2">
                 <div>

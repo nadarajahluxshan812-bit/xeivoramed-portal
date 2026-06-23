@@ -36,7 +36,7 @@ export default async function DoctorDashboard() {
     <AppShell nav={nav} userName={user.fullName} roleLabel={t(locale, "doctorRole")} locale={locale}>
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-slate-900">Good morning, {user.fullName.split(" ").slice(-1)[0]}</h1>
+          <h1 className="text-2xl font-semibold text-ink">Good morning, {user.fullName.split(" ").slice(-1)[0]}</h1>
           <div className="flex gap-2">
             <Link href="/doctor/scribe" className="btn-primary px-3 py-2 text-sm">
               <Mic className="h-4 w-4" /> AI Scribe

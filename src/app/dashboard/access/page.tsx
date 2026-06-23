@@ -22,7 +22,7 @@ export default async function AccessCenterPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
           <ShieldCheck className="h-6 w-6 text-brand-600" /> Access Center
         </h1>
         <p className="text-sm text-slate-500">You own your records. Approve, revoke and audit who can see them.</p>

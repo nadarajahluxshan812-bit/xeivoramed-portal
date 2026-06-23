@@ -13,7 +13,7 @@ export default async function MedicationsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Medications & treatments</h1>
+        <h1 className="text-2xl font-semibold text-ink">Medications & treatments</h1>
         <button className="btn-primary"><Plus className="h-4 w-4" /> Add medication</button>
       </div>
 

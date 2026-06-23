@@ -45,7 +45,7 @@ export default async function ClinicBloodPage({
     <AppShell nav={nav} userName={user.fullName} roleLabel="Hospital portal" locale={locale}>
       <div className="mx-auto max-w-5xl space-y-6">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+          <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
             <Droplet className="h-6 w-6 text-red-500" /> Emergency Blood Network
           </h1>
           <p className="text-sm text-slate-500">Locate compatible donors in seconds — create a request and the AI matching engine alerts the best matches first.</p>

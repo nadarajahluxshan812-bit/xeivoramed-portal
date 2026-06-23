@@ -59,7 +59,7 @@ export default async function AdminDashboard() {
     <AppShell nav={nav} userName={user.fullName} roleLabel={t(locale, "adminRole")} locale={locale}>
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold text-slate-900">System analytics</h1>
+          <h1 className="text-2xl font-semibold text-ink">System analytics</h1>
           <DevReset />
         </div>
 

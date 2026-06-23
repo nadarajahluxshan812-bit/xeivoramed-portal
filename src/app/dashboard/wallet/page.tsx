@@ -23,7 +23,7 @@ export default async function WalletPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
           <Wallet className="h-6 w-6 text-brand-600" /> Global Health Wallet
         </h1>
         <p className="text-sm text-slate-500">All your health documents in one secure, portable place.</p>

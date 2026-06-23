@@ -25,7 +25,7 @@ export default async function PilotPage({
         {submitted ? (
           <div className="card text-center">
             <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-            <h1 className="mt-4 text-2xl font-bold text-slate-900">Thank you!</h1>
+            <h1 className="mt-4 text-2xl font-semibold text-ink">Thank you!</h1>
             <p className="mt-2 text-slate-600">
               We&apos;ve received your pilot request. Our team will reach out within 2 working days to
               set up XeivoraMed for your clinic or practice.
@@ -35,7 +35,7 @@ export default async function PilotPage({
         ) : (
           <div className="card">
             <span className="badge bg-brand-50 text-brand-700">For clinics &amp; doctors</span>
-            <h1 className="mt-3 text-2xl font-bold text-slate-900">Request a pilot</h1>
+            <h1 className="mt-3 text-2xl font-semibold text-ink">Request a pilot</h1>
             <p className="mt-2 text-sm text-slate-600">
               Run XeivoraMed at your clinic. Tell us a bit about your practice and we&apos;ll help you
               onboard doctors, import patients and cut missed appointments.

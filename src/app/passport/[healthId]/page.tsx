@@ -75,7 +75,7 @@ export default async function EmergencyPassportPage({
               <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-brand-700">
                 <Globe className="h-4 w-4" /> {t(locale, "lpCardIdLabel")}
               </p>
-              <h1 className="mt-1 text-2xl font-bold text-slate-900">{p.fullName}</h1>
+              <h1 className="mt-1 text-2xl font-semibold text-ink">{p.fullName}</h1>
               <p className="text-sm text-slate-500">{data.globalId} · {t(locale, "ppDob")} {p.dateOfBirth ? formatDate(p.dateOfBirth) : "—"}{p.age ? ` · ${p.age}y` : ""}</p>
             </div>
             <div className="text-right">

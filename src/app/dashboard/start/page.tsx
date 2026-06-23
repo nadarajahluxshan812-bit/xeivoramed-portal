@@ -51,7 +51,7 @@ export default async function StartPage() {
         <span className="badge bg-brand-50 text-brand-700">
           <ShieldCheck className="h-3.5 w-3.5" /> {t(locale, "emergencyPassport")}
         </span>
-        <h1 className="mt-3 text-2xl font-bold text-slate-900 sm:text-3xl">{t(locale, "obTitle")}</h1>
+        <h1 className="mt-3 text-2xl font-semibold text-ink sm:text-3xl">{t(locale, "obTitle")}</h1>
         <p className="mt-1.5 text-slate-500">{t(locale, "obSubtitle")}</p>
       </div>
 

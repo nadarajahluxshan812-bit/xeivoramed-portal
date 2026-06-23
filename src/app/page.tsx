@@ -133,7 +133,7 @@ export default async function LandingPage() {
       {/* How it works */}
       <section id="how" className="bg-slate-50 py-16">
         <div className="mx-auto max-w-6xl px-5">
-          <h2 className="text-2xl font-bold text-slate-900">{t(locale, "lpHowTitle")}</h2>
+          <h2 className="text-2xl font-semibold text-ink">{t(locale, "lpHowTitle")}</h2>
           <p className="mt-2 max-w-2xl text-slate-600">
             {t(locale, "lpHowBody")}
           </p>
@@ -159,7 +159,7 @@ export default async function LandingPage() {
 
       {/* Trust levels — the core differentiator */}
       <section className="mx-auto max-w-6xl px-5 py-16">
-        <h2 className="text-2xl font-bold text-slate-900">{t(locale, "lpTrustTitle")}</h2>
+        <h2 className="text-2xl font-semibold text-ink">{t(locale, "lpTrustTitle")}</h2>
         <p className="mt-2 max-w-2xl text-slate-600">
           {t(locale, "lpTrustBody")}
         </p>

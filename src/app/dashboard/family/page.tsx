@@ -28,7 +28,7 @@ export default async function FamilyPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-ink">
           <Users className="h-6 w-6 text-brand-600" /> Family Care & Identity
         </h1>
         <p className="text-sm text-slate-500">Manage dependents, identity documents and travel health — one profile for the whole family.</p>

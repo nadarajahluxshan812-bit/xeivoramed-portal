@@ -38,11 +38,11 @@ export default async function ClinicDashboard() {
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{data.name}</h1>
+            <h1 className="text-2xl font-semibold text-ink">{data.name}</h1>
             <p className="text-sm text-slate-500">Operations overview · today</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/clinic/blood" className="btn px-3 py-2 text-sm bg-red-500 text-white hover:bg-red-600">
+            <Link href="/clinic/blood" className="btn-danger px-3 py-2 text-sm">
               <Droplet className="h-4 w-4" /> Blood emergency
             </Link>
             <Link href="/provider/scribe" className="btn-primary px-3 py-2 text-sm">

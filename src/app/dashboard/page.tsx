@@ -30,7 +30,7 @@ export default async function PatientDashboard() {
       {/* Greeting */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{t(locale, "dbHello")} {data.patient.fullName.split(" ")[0]} 👋</h1>
+          <h1 className="text-2xl font-semibold text-ink">{t(locale, "dbHello")} {data.patient.fullName.split(" ")[0]} 👋</h1>
           <p className="text-sm text-slate-500">
             {t(locale, "cBloodGroup")} {data.patient.bloodGroup} · {data.patient.district}
           </p>
