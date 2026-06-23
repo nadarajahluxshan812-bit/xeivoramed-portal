@@ -35,13 +35,16 @@ export default async function DoctorDashboard() {
   return (
     <AppShell nav={nav} userName={user.fullName} roleLabel={t(locale, "doctorRole")} locale={locale}>
       <div className="mx-auto max-w-5xl space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-semibold text-ink">Good morning, {user.fullName.split(" ").slice(-1)[0]}</h1>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold text-ink">Good morning, {user.fullName.split(" ").slice(-1)[0]}</h1>
+            <p className="text-sm text-slate-500">Pull up any patient&rsquo;s verified record — provenance on every value.</p>
+          </div>
           <div className="flex gap-2">
             <Link href="/doctor/scribe" className="btn-primary px-3 py-2 text-sm">
               <Mic className="h-4 w-4" /> AI Scribe
             </Link>
-            <Link href="/emergency" className="btn-danger px-3 py-2 text-sm">
+            <Link href="/emergency" className="btn-secondary px-3 py-2 text-sm">
               <Ambulance className="h-4 w-4" /> Emergency access
             </Link>
           </div>
@@ -114,7 +117,7 @@ export default async function DoctorDashboard() {
                     <td className="text-slate-600">{p.age}</td>
                     <td><Badge tone="brand">{p.condition}</Badge></td>
                     <td className="text-slate-500">{relativeDay(p.lastVisit)}</td>
-                    <td className="text-right"><button className="text-brand-700 hover:underline">View records</button></td>
+                    <td className="text-right"><Link href={`/provider/records/${p.id}`} className="font-medium text-brand-700 hover:underline">View records</Link></td>
                   </tr>
                 ))}
               </tbody>
