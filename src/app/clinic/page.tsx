@@ -39,16 +39,16 @@ export default async function ClinicDashboard() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold text-ink">{data.name}</h1>
-            <p className="text-sm text-slate-500">Verified patient records on lookup · today&rsquo;s operations</p>
+            <p className="text-sm text-slate-500">Operations overview · today</p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href="/clinic/blood" className="btn-danger px-3 py-2 text-sm">
+              <Droplet className="h-4 w-4" /> Blood emergency
+            </Link>
             <Link href="/provider/scribe" className="btn-primary px-3 py-2 text-sm">
               <Mic className="h-4 w-4" /> AI Scribe
             </Link>
-            <Link href="/clinic/blood" className="btn-secondary px-3 py-2 text-sm">
-              <Droplet className="h-4 w-4" /> Blood emergency
-            </Link>
-            <Link href="/emergency" className="btn-secondary px-3 py-2 text-sm">
+            <Link href="/emergency" className="btn-danger px-3 py-2 text-sm">
               <Ambulance className="h-4 w-4" /> Emergency access
             </Link>
           </div>
