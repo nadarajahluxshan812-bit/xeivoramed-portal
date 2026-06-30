@@ -114,7 +114,7 @@ export default async function DoctorDashboard() {
                     <td className="text-slate-600">{p.age}</td>
                     <td><Badge tone="brand">{p.condition}</Badge></td>
                     <td className="text-slate-500">{relativeDay(p.lastVisit)}</td>
-                    <td className="text-right"><button className="text-brand-700 hover:underline">View records</button></td>
+                    <td className="text-right"><Link href={`/provider/records/${p.id}`} className="font-medium text-brand-700 hover:underline">View verified record</Link></td>
                   </tr>
                 ))}
               </tbody>

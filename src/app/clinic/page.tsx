@@ -67,7 +67,14 @@ export default async function ClinicDashboard() {
             <SectionTitle
               title="Live appointment queue"
               icon={<ListChecks className="h-5 w-5 text-brand-600" />}
-              action={<Badge tone="green">● Live</Badge>}
+              action={
+                <div className="flex items-center gap-3">
+                  <Link href="/provider/records/p1" className="text-sm font-medium text-brand-700 hover:underline">
+                    View verified record
+                  </Link>
+                  <Badge tone="green">● Live</Badge>
+                </div>
+              }
             />
             {data.queue.length === 0 && <NoData message="No patients in the queue" hint="Checked-in patients appear here in real time." />}
             <ul className="space-y-2">
